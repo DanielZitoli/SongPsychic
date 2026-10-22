@@ -79,6 +79,8 @@ Never commit anything under `data/` or `models/`. Everything must be reproducibl
 - experiments/  results table, one row per run
 - api/ (FastAPI) and frontend/  added at the serving stage
 - tests/  pytest
+- docs/app_requirements.md  client-facing app requirements, captured ahead of stage 6 so ML
+  decisions (ID schemes, what's precomputed vs. queried live) don't box in serving later
 
 ## Conventions
 - Python 3.11+, type hints, small functions, docstrings explaining the *why* for recommender-specific logic.
