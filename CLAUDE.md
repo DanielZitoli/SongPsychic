@@ -42,19 +42,23 @@ See [metabrainz.org/datasets/download](https://metabrainz.org/datasets/download)
   CC BY-NC-SA.
 - **Canonical Data Dump** — picks one canonical recording/release per MusicBrainz release-group
   (collapsing remasters, live versions, re-releases etc. into a single representative version),
-  plus a flattened CSV of their basic metadata (artist, title) for fuzzy matching. Use it to
-  canonicalize the recording IDs in MLHD+ *before* joining against the full MusicBrainz dump, so a
-  song isn't fragmented into multiple items by its different releases. CC0, updated twice a month.
-  Docs: [musicbrainz.org/doc/Canonical_MusicBrainz_data](https://musicbrainz.org/doc/Canonical_MusicBrainz_data).
+  plus a flattened CSV of their basic metadata (artist, title) for fuzzy matching. CC0, updated
+  twice a month. Docs: [musicbrainz.org/doc/Canonical_MusicBrainz_data](https://musicbrainz.org/doc/Canonical_MusicBrainz_data).
   Download: [data.metabrainz.org/pub/musicbrainz/canonical_data/](https://data.metabrainz.org/pub/musicbrainz/canonical_data/)
   (latest dated subdirectory, one `.tar.zst` archive of three CSVs).
 
+  **Coverage caveat (verified against the real dump, not just the docs):** the redirect table only
+  covers recordings that are part of a cleanly-organized release-group — ~7.9M of MusicBrainz's
+  40.6M recordings (~19%). Singles, compilations, soundtracks etc. are mostly absent. Requiring a
+  canonical match before using an MLHD+ listen drops ~95% of real listens. The fix
+  (`src/songpsychic/data/canonical.py`): use the canonical ID when a match exists, else fall back
+  to the original `recording_mbid` as the item ID — never drop the row for lack of a match.
+
   **Standard dump vs. canonical dump:** the standard dump is the full, authoritative database —
   every release, recording, and version that exists, with no deduplication. The canonical dump is
-  a small *derived* lookup table on top of it, picking a single "preferred" recording/release per
-  song so recommender items aren't split across duplicates. They answer different questions and
-  you need both: canonical dump to decide what counts as "the same song," standard dump for the
-  actual artist/tag/genre metadata once items are canonicalized.
+  a small *derived* lookup table over a curated subset of it, not a lookup table for every
+  recording. You need both: canonical dump to merge true duplicates where it has an entry,
+  standard dump for metadata on everything else (and for metadata in general — artist/tag/genre).
 
 ### Optional extensions (later stages)
 - **AcousticBrainz** — crowd-sourced low-level audio features (tempo, key, timbre, mood) for

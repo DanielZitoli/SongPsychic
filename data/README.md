@@ -34,10 +34,9 @@ Artists, releases, recordings, relationships, and user tags/genres.
   CC BY-NC-SA 3.0 — keep these licenses separate if the derived data is ever reused elsewhere.
 - Goes in `data/raw/musicbrainz/`.
 
-### Canonical Data Dump — ID mapping helper
+### Canonical Data Dump — ID mapping helper (partial coverage — see caveat)
 Picks one canonical recording/release per release-group (collapsing remasters, live versions,
-re-releases etc.), so the same song isn't fragmented into multiple items. Use it to resolve MLHD+
-MBIDs before joining against the full MusicBrainz metadata dump.
+re-releases etc.), so the same song isn't fragmented into multiple items.
 - Docs: https://musicbrainz.org/doc/Canonical_MusicBrainz_data
 - Download (no signup): https://data.metabrainz.org/pub/musicbrainz/canonical_data/ (latest dated
   subdirectory; one `.tar.zst` archive containing three CSVs — release redirect, recording
@@ -45,12 +44,19 @@ MBIDs before joining against the full MusicBrainz metadata dump.
 - License: CC0.
 - Goes in `data/raw/canonical/`.
 
+**Coverage caveat (measured against the real dump, not assumed from docs):** the recording
+redirect only covers recordings that are part of a cleanly-organized release-group — ~7.9M of
+MusicBrainz's 40.6M recordings (~19%). Singles, compilations, soundtracks etc. are mostly absent.
+We tested requiring a canonical match before using an MLHD+ listen: it drops ~95% of real listens.
+So `src/songpsychic/data/canonical.py` uses the canonical ID when a match exists, and falls back
+to the original `recording_mbid` as the item ID otherwise — never drops a row for lack of a match.
+
 **Do you need both the standard dump and the canonical dump?** Yes, they serve different jobs.
 The standard dump is the full, undeduplicated database — every version of every release and
-recording. The canonical dump is a small derived table on top of it that just says "treat these N
-MBIDs as the same recording, and here's the one to prefer." Use the canonical dump to collapse
-MLHD+ listens onto one ID per song, then use the standard dump to pull that song's actual
-artist/tag/genre metadata.
+recording. The canonical dump is a small derived table over a *curated subset* of it (not a
+lookup table for every recording) that says "treat these N MBIDs as the same recording, and here's
+the one to prefer." Use the canonical dump to merge true duplicates where it has an entry; use the
+standard dump for metadata on everything else, and for artist/tag/genre in general.
 
 ### Optional, later stages
 - **AcousticBrainz** (audio features for content-based embeddings, frozen since 2022): archive
