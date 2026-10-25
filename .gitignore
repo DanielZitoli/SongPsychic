@@ -4,6 +4,7 @@ data/*
 
 __pycache__/
 *.pyc
+*.egg-info/
 .venv/
 venv/
 .ipynb_checkpoints/

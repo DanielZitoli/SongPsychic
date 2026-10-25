@@ -11,19 +11,36 @@ no canonical entry, rather than dropping the row.
 
 from __future__ import annotations
 
+import tarfile
 from pathlib import Path
 
 import pandas as pd
+import zstandard
+
+
+def extract_canonical_dump(archive_path: Path, dest_dir: Path) -> None:
+    """Extract the canonical dump's 3 CSVs directly into `dest_dir`, flat.
+
+    The archive's own internal layout is nested and dated
+    (`musicbrainz-canonical-dump-<date>/canonical/*.csv`) — we write each CSV straight to
+    `dest_dir/<name>.csv` by name instead of letting `tar.extractall` preserve that structure.
+    """
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    with open(archive_path, "rb") as fh:
+        with zstandard.ZstdDecompressor().stream_reader(fh) as reader:
+            with tarfile.open(fileobj=reader, mode="r|") as tar:
+                for member in tar:
+                    if member.isfile() and member.name.endswith(".csv"):
+                        with tar.extractfile(member) as f:
+                            (dest_dir / Path(member.name).name).write_bytes(f.read())
 
 
 def load_recording_redirect(canonical_dir: Path) -> pd.DataFrame:
-    path = next(canonical_dir.rglob("canonical_recording_redirect.csv"))
-    return pd.read_csv(path, dtype=str)
+    return pd.read_csv(canonical_dir / "canonical_recording_redirect.csv", dtype=str)
 
 
 def load_musicbrainz_data(canonical_dir: Path) -> pd.DataFrame:
-    path = next(canonical_dir.rglob("canonical_musicbrainz_data.csv"))
-    return pd.read_csv(path, dtype=str)
+    return pd.read_csv(canonical_dir / "canonical_musicbrainz_data.csv", dtype=str)
 
 
 def canonicalize_recordings(listens: pd.DataFrame, redirect: pd.DataFrame) -> pd.DataFrame:
